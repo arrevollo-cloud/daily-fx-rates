@@ -4,6 +4,12 @@ import re
 import smtplib
 from email.mime.text import MIMEText
 import os
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+import time
 
 print("Starting script...")
 
@@ -27,52 +33,75 @@ print("EUR/USD:", eurusd)
 # Dolar Bolivia Hoy
 # -------------------------
 
-print("Fetching Bolivia rates...")
+print("Launching browser...")
 
-url = "https://dolarboliviahoy.com/"
+options = Options()
 
-html = requests.get(url).text
+options.add_argument("--headless")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
 
-print("Page downloaded.")
+driver = webdriver.Chrome(
+    service=Service(ChromeDriverManager().install()),
+    options=options
+)
 
-soup = BeautifulSoup(html, "html.parser")
+driver.get("https://dolarboliviahoy.com/")
 
-# Default values
+print("Page loaded.")
+
+# Wait for JavaScript rendering
+
+time.sleep(5)
+
+page_text = driver.find_element(By.TAG_NAME, "body").text
+
+print(page_text)
+
+driver.quit()
 
 referencial = "NOT FOUND"
 usdt_bob = "NOT FOUND"
 
-# Find all tables
+# Find section
 
-tables = soup.find_all("table")
+lines = page_text.splitlines()
 
-print(f"Found {len(tables)} tables")
+for i, line in enumerate(lines):
 
-for table in tables:
+    if "Referencial BCB vs Paralelo" in line:
 
-    rows = table.find_all("tr")
+        print("FOUND SECTION")
 
-    for row in rows:
+        # Search nearby lines for Compra row
 
-        cols = row.find_all(["td", "th"])
+        for j in range(i, min(i + 10, len(lines))):
 
-        values = [c.get_text(strip=True) for c in cols]
+            current = lines[j]
 
-        print(values)
+            print(current)
 
-        # Look for Compra row with at least 3 columns
+            if "Compra" in current:
 
-        if len(values) >= 3 and "Compra" in values[0]:
+                parts = current.split()
 
-            referencial = values[1]
-            usdt_bob = values[2]
+                numbers = []
 
-            print("MATCH FOUND")
+                for p in parts:
 
-            break
+                    try:
+                        float(p)
+                        numbers.append(p)
+                    except:
+                        pass
+
+                if len(numbers) >= 2:
+                    referencial = numbers[0]
+                    usdt_bob = numbers[1]
 
 print("Referencial:", referencial)
 print("USDT/BOB:", usdt_bob)
+
 # -------------------------
 # Email Content
 # -------------------------
