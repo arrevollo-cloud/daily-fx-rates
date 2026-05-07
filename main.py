@@ -54,51 +54,35 @@ print("Page loaded.")
 
 time.sleep(5)
 
-page_text = driver.find_element(By.TAG_NAME, "body").text
-
-print(page_text)
-
-driver.quit()
+# -------------------------
+# Extract Referencial table (DOM-based)
+# -------------------------
 
 referencial = "NOT FOUND"
 usdt_bob = "NOT FOUND"
 
-# Find section
+# Find the table that comes after the "Referencial" header
+table = driver.find_element(
+    By.XPATH,
+    "//h2[contains(., 'Referencial')]//following::table[1]"
+)
 
-lines = page_text.splitlines()
+rows = table.find_elements(By.TAG_NAME, "tr")
 
-for i, line in enumerate(lines):
+for row in rows:
+    cells = row.find_elements(By.TAG_NAME, "td")
+    if not cells:
+        continue
 
-    if "Referencial BCB vs Paralelo" in line:
+    label = cells[0].text.strip()
 
-        print("FOUND SECTION")
+    if label == "Compra":
+        referencial = cells[1].text.strip().replace(",", ".")
+        usdt_bob = cells[2].text.strip().replace(",", ".")
+        break
 
-        # Search nearby lines for Compra row
-
-        for j in range(i, min(i + 10, len(lines))):
-
-            current = lines[j]
-
-            print(current)
-
-            if "Compra" in current:
-
-                parts = current.split()
-
-                numbers = []
-
-                for p in parts:
-
-                    try:
-                        float(p)
-                        numbers.append(p)
-                    except:
-                        pass
-
-                if len(numbers) >= 2:
-                    referencial = numbers[0]
-                    usdt_bob = numbers[1]
-
+     
+driver.quit()
 print("Referencial:", referencial)
 print("USDT/BOB:", usdt_bob)
 
