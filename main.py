@@ -40,33 +40,23 @@ soup = BeautifulSoup(html, "html.parser")
 text = soup.get_text(" ", strip=True)
 
 # -------------------------
-# Extract USDT/BOB Venta
+# Extract Referencial + Paralelo
 # -------------------------
 
-usdt_match = re.search(
-    r'USDT.*?Precio de Venta Bs ([0-9]+(?:\.[0-9]+)?)',
-    text,
-    re.IGNORECASE
+match = re.search(
+    r'Compra\s+([0-9]+(?:\.[0-9]+)?)\s+([0-9]+(?:\.[0-9]+)?)',
+    text
 )
 
-usdt_bob = usdt_match.group(1) if usdt_match else "NOT FOUND"
-
-print("USDT/BOB:", usdt_bob)
-
-# -------------------------
-# Extract Referencial Venta
-# -------------------------
-
-ref_match = re.search(
-    r'Referencial.*?Precio de Venta Bs ([0-9]+(?:\.[0-9]+)?)',
-    text,
-    re.IGNORECASE
-)
-
-referencial = ref_match.group(1) if ref_match else "NOT FOUND"
+if match:
+    referencial = match.group(1)
+    usdt_bob = match.group(2)
+else:
+    referencial = "NOT FOUND"
+    usdt_bob = "NOT FOUND"
 
 print("Referencial:", referencial)
-
+print("USDT/BOB:", usdt_bob)
 # -------------------------
 # Email Content
 # -------------------------
