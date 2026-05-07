@@ -37,23 +37,39 @@ print("Page downloaded.")
 
 soup = BeautifulSoup(html, "html.parser")
 
-text = soup.get_text(" ", strip=True)
+# Default values
 
-# -------------------------
-# Extract Referencial + Paralelo
-# -------------------------
+referencial = "NOT FOUND"
+usdt_bob = "NOT FOUND"
 
-match = re.search(
-    r'Compra\s+([0-9]+(?:\.[0-9]+)?)\s+([0-9]+(?:\.[0-9]+)?)',
-    text
-)
+# Find all tables
 
-if match:
-    referencial = match.group(1)
-    usdt_bob = match.group(2)
-else:
-    referencial = "NOT FOUND"
-    usdt_bob = "NOT FOUND"
+tables = soup.find_all("table")
+
+print(f"Found {len(tables)} tables")
+
+for table in tables:
+
+    rows = table.find_all("tr")
+
+    for row in rows:
+
+        cols = row.find_all(["td", "th"])
+
+        values = [c.get_text(strip=True) for c in cols]
+
+        print(values)
+
+        # Look for Compra row with at least 3 columns
+
+        if len(values) >= 3 and "Compra" in values[0]:
+
+            referencial = values[1]
+            usdt_bob = values[2]
+
+            print("MATCH FOUND")
+
+            break
 
 print("Referencial:", referencial)
 print("USDT/BOB:", usdt_bob)
