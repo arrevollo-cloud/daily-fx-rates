@@ -13,7 +13,7 @@ import time
 import csv
 from datetime import datetime, date
 from statistics import mean
-``
+
 
 DATA_FILE = "fx_history.csv"
 
