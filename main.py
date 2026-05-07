@@ -159,7 +159,7 @@ weekly_table += (
     f"{weekly_avg['PAR']:.2f} | "
     f"{weekly_avg['REF']:.2f}\n"
 )
-``
+
 this_month = today_dt.strftime("%Y-%m")
 
 monthly_rows = []
