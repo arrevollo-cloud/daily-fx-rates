@@ -141,23 +141,36 @@ weekly_avg = {
     "REF": mean(r["REF"] for r in weekly_rows),
 }
 
-weekly_table = "Weekly Rates (Mon–Sun)\n"
-weekly_table += "Day | EUR/USD | Paralelo USD/BOB | Referencial USD/BOB\n"
-weekly_table += "--- | --- | --- | ---\n"
+weekly_table = (
+    "\n"
+    "WEEKLY FX RATES\n"
+    "===========================\n"
+)
+
+weekly_table += (
+    f"{'Day':<6}"
+    f"{'EUR/USD':>12}"
+    f"{'Paralelo USD/BOB':>20}"
+    f"{'Referencial USD/BOB':>24}\n"
+)
+
+weekly_table += "-" * 62 + "\n"
 
 for r in weekly_rows:
     weekly_table += (
-        f"{r['date']} | "
-        f"{r['EUR']:.4f} | "
-        f"{r['PAR']:.2f} | "
-        f"{r['REF']:.2f}\n"
+        f"{r['date']:<6}"
+        f"{r['EUR']:>12.4f}"
+        f"{r['PAR']:>20.2f}"
+        f"{r['REF']:>24.2f}\n"
     )
 
+weekly_table += "-" * 62 + "\n"
+
 weekly_table += (
-    f"AVG | "
-    f"{weekly_avg['EUR']:.4f} | "
-    f"{weekly_avg['PAR']:.2f} | "
-    f"{weekly_avg['REF']:.2f}\n"
+    f"{'AVG':<6}"
+    f"{weekly_avg['EUR']:>12.4f}"
+    f"{weekly_avg['PAR']:>20.2f}"
+    f"{weekly_avg['REF']:>24.2f}\n"
 )
 
 this_month = today_dt.strftime("%Y-%m")
@@ -176,24 +189,35 @@ monthly_avg = {
     "REF": mean(float(r["REFERENCIAL_USD_BOB"]) for r in monthly_rows),
 }
 
-monthly_table = "Monthly Average Rates\n"
-monthly_table += "EUR/USD | Paralelo USD/BOB | Referencial USD/BOB\n"
-monthly_table += "--- | --- | ---\n"
+monthly_table = (
+    "\n"
+    "MONTHLY AVERAGE FX RATES\n"
+    "===========================\n"
+)
 monthly_table += (
-    f"{monthly_avg['EUR']:.4f} | "
-    f"{monthly_avg['PAR']:.2f} | "
-    f"{monthly_avg['REF']:.2f}\n"
+    f"{'EUR/USD':>12}"
+    f"{'Paralelo USD/BOB':>20}"
+    f"{'Referencial USD/BOB':>24}\n"
+)
+
+monthly_table += "-" * 56 + "\n"
+
+monthly_table += (
+    f"{monthly_avg['EUR']:>12.4f}"
+    f"{monthly_avg['PAR']:>20.2f}"
+    f"{monthly_avg['REF']:>24.2f}\n"
 )
 # -------------------------
 # Email Content
 # -------------------------
 
 message = f"""
-DAILY FX RATES
+DAILY FX REPORT
+===========================
 
 EUR/USD: {eurusd:.4f}
-Paralelo USD/BOB: {usdt_bob}
-Referencial USD/BOB: {referencial}
+Paralelo USD/BOB (Venta): {usdt_bob}
+Referencial USD/BOB (Venta): {referencial}
 
 {weekly_table}
 
