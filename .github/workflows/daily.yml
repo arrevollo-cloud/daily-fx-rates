@@ -1,6 +1,6 @@
 # scheduler refresh
 
-name: Daily FX Rates
+name: Daily FX Rates Scheduler
 
 on:
   schedule:
