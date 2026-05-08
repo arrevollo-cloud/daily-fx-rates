@@ -1,8 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
 import re
-import smtplib
-from email.mime.text import MIMEText
 import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -11,9 +9,9 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 import time
 import csv
+import json
 from datetime import datetime, date
 from statistics import mean
-
 
 DATA_FILE = "fx_history.csv"
 
@@ -28,8 +26,6 @@ print("Fetching EUR/USD...")
 fx = requests.get(
     "https://open.er-api.com/v6/latest/EUR"
 ).json()
-
-print(fx)
 
 eurusd = fx["rates"]["USD"]
 
@@ -57,7 +53,6 @@ driver.get("https://dolarboliviahoy.com/")
 print("Page loaded.")
 
 # Wait for JavaScript rendering
-
 time.sleep(5)
 
 # -------------------------
@@ -67,7 +62,6 @@ time.sleep(5)
 referencial = "NOT FOUND"
 usdt_bob = "NOT FOUND"
 
-# Find the table that comes after the "Referencial" header
 table = driver.find_element(
     By.XPATH,
     "//h2[contains(., 'Referencial')]//following::table[1]"
@@ -77,6 +71,7 @@ rows = table.find_elements(By.TAG_NAME, "tr")
 
 for row in rows:
     cells = row.find_elements(By.TAG_NAME, "td")
+
     if not cells:
         continue
 
@@ -87,11 +82,14 @@ for row in rows:
         usdt_bob = cells[2].text.strip().replace(",", ".")
         break
 
-     
 driver.quit()
+
 print("Referencial:", referencial)
 print("USDT/BOB:", usdt_bob)
 
+# -------------------------
+# Store Historical CSV
+# -------------------------
 
 today = date.today().isoformat()
 
@@ -100,7 +98,6 @@ file_exists = os.path.isfile(DATA_FILE)
 with open(DATA_FILE, "a", newline="") as f:
     writer = csv.writer(f)
 
-    # Write header once
     if not file_exists:
         writer.writerow([
             "date",
@@ -116,6 +113,10 @@ with open(DATA_FILE, "a", newline="") as f:
         float(referencial)
     ])
 
+# -------------------------
+# Weekly Calculations
+# -------------------------
+
 def is_same_week(d1, d2):
     return d1.isocalendar()[:2] == d2.isocalendar()[:2]
 
@@ -125,8 +126,10 @@ weekly_rows = []
 
 with open(DATA_FILE, newline="") as f:
     reader = csv.DictReader(f)
+
     for row in reader:
         row_date = datetime.fromisoformat(row["date"]).date()
+
         if is_same_week(row_date, today_dt):
             weekly_rows.append({
                 "date": row_date.strftime("%a"),
@@ -141,37 +144,9 @@ weekly_avg = {
     "REF": mean(r["REF"] for r in weekly_rows),
 }
 
-weekly_table = (
-    "\n"
-    "WEEKLY FX RATES\n"
-    "===========================\n"
-)
-
-weekly_table += (
-    f"{'Day':<6}"
-    f"{'EUR/USD':>12}"
-    f"{'Paralelo USD/BOB':>20}"
-    f"{'Referencial USD/BOB':>24}\n"
-)
-
-weekly_table += "-" * 62 + "\n"
-
-for r in weekly_rows:
-    weekly_table += (
-        f"{r['date']:<6}"
-        f"{r['EUR']:>12.4f}"
-        f"{r['PAR']:>20.2f}"
-        f"{r['REF']:>24.2f}\n"
-    )
-
-weekly_table += "-" * 62 + "\n"
-
-weekly_table += (
-    f"{'AVG':<6}"
-    f"{weekly_avg['EUR']:>12.4f}"
-    f"{weekly_avg['PAR']:>20.2f}"
-    f"{weekly_avg['REF']:>24.2f}\n"
-)
+# -------------------------
+# Monthly Calculations
+# -------------------------
 
 this_month = today_dt.strftime("%Y-%m")
 
@@ -179,6 +154,7 @@ monthly_rows = []
 
 with open(DATA_FILE, newline="") as f:
     reader = csv.DictReader(f)
+
     for row in reader:
         if row["date"].startswith(this_month):
             monthly_rows.append(row)
@@ -189,73 +165,35 @@ monthly_avg = {
     "REF": mean(float(r["REFERENCIAL_USD_BOB"]) for r in monthly_rows),
 }
 
-monthly_table = (
-    "\n"
-    "MONTHLY AVERAGE FX RATES\n"
-    "===========================\n"
-)
-monthly_table += (
-    f"{'EUR/USD':>12}"
-    f"{'Paralelo USD/BOB':>20}"
-    f"{'Referencial USD/BOB':>24}\n"
-)
-
-monthly_table += "-" * 56 + "\n"
-
-monthly_table += (
-    f"{monthly_avg['EUR']:>12.4f}"
-    f"{monthly_avg['PAR']:>20.2f}"
-    f"{monthly_avg['REF']:>24.2f}\n"
-)
 # -------------------------
-# Email Content
+# Generate JSON
 # -------------------------
 
-message = f"""
-DAILY FX REPORT
-===========================
+data = {
+    "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
 
-EUR/USD: {eurusd:.4f}
-Paralelo USD/BOB (Venta): {usdt_bob}
-Referencial USD/BOB (Venta): {referencial}
+    "daily": {
+        "eurusd": round(float(eurusd), 4),
+        "usdt_bob": float(usdt_bob),
+        "referencial": float(referencial)
+    },
 
-{weekly_table}
+    "weekly_avg": {
+        "eurusd": round(weekly_avg["EUR"], 4),
+        "usdt_bob": round(weekly_avg["PAR"], 2),
+        "referencial": round(weekly_avg["REF"], 2)
+    },
 
-{monthly_table}
-"""
+    "monthly_avg": {
+        "eurusd": round(monthly_avg["EUR"], 4),
+        "usdt_bob": round(monthly_avg["PAR"], 2),
+        "referencial": round(monthly_avg["REF"], 2)
+    }
+}
 
-print(message)
+with open("fx.json", "w") as f:
+    json.dump(data, f, indent=2)
 
-# -------------------------
-# Send Email
-# -------------------------
+print("fx.json generated successfully")
 
-sender = os.environ["EMAIL_ADDRESS"]
-
-password = os.environ["EMAIL_PASSWORD"]
-
-recipient = os.environ["RECIPIENT_EMAIL"]
-
-msg = MIMEText(message)
-
-msg["Subject"] = "Daily FX Rates"
-
-msg["From"] = sender
-
-msg["To"] = recipient
-
-print("Connecting to Gmail SMTP...")
-
-server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-
-server.login(sender, password)
-
-print("Sending email...")
-
-server.sendmail(sender, recipient, msg.as_string())
-
-server.quit()
-
-print("Email sent successfully.")
-
-
+print(json.dumps(data, indent=2))
