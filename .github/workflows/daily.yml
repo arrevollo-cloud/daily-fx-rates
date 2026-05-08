@@ -1,3 +1,5 @@
+# scheduler refresh
+
 name: Daily FX Rates
 
 on:
