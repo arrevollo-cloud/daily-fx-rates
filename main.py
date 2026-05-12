@@ -10,26 +10,31 @@ JSON_FILE = "fx.json"
 
 print("Starting FX update script...")
 
-#fix main
+# --------------------------------------------------
+# Helpers
+# --------------------------------------------------
 
-# ==================================================
-# EUR / USD
-# ==================================================
+def r2(x):
+    return round(float(x), 2)
+
+def today():
+    return date.today().isoformat()
+
+# --------------------------------------------------
+# Data sources
+# --------------------------------------------------
+
 def get_eur_usd():
     r = requests.get("https://open.er-api.com/v6/latest/EUR", timeout=15)
     r.raise_for_status()
-    return float(r.json()["rates"]["USD"])
+    return r.json()["rates"]["USD"]
 
-
-# ==================================================
-# USD / BOB Parallel (Binance P2P proxy, SELL)
-# ==================================================
 def get_usdt_bob_parallel():
     url = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
     payload = {
         "page": 1,
-        "rows": 10,
-        "tradeType": "SELL",
+        "rows": 5,
+        "tradeType": "SELL",   # venta
         "asset": "USDT",
         "fiat": "BOB",
         "countries": [],
@@ -38,67 +43,63 @@ def get_usdt_bob_parallel():
 
     r = requests.post(url, json=payload, timeout=20)
     r.raise_for_status()
-    return float(r.json()["data"][0]["adv"]["price"])
+    return r.json()["data"][0]["adv"]["price"]
 
-
-# ==================================================
-# USD / BOB — BCB Valor Referencial (Venta)
-# ==================================================
-def get_bcb_valor_referencial_venta():
+def get_bcb_valor_referencial():
+    # Valor referencial USD/BOB (Venta ≈ 10.39)
     url = "https://bcb.cucu.bo/api/v1/tc/usd"
     r = requests.get(url, timeout=15)
     r.raise_for_status()
-    return float(r.json()["tc_referencial_usd"]["venta"])
+    return r.json()["tc_referencial_usd"]["venta"]
 
+# --------------------------------------------------
+# Fetch current values
+# --------------------------------------------------
 
-# ==================================================
-# Fetch current rates
-# ==================================================
-eurusd = get_eur_usd()
-parallel = get_usdt_bob_parallel()
-referencial = get_bcb_valor_referencial_venta()
+eurusd = r2(get_eur_usd())
+parallel = r2(get_usdt_bob_parallel())
+referencial = r2(get_bcb_valor_referencial())
 
 print("EUR/USD:", eurusd)
-print("USD/BOB Parallel (Binance proxy):", parallel)
-print("USD/BOB Referencial (BCB venta):", referencial)
+print("USD/BOB Parallel:", parallel)
+print("USD/BOB Referencial:", referencial)
 
+# --------------------------------------------------
+# Store CSV history
+# --------------------------------------------------
 
-# ==================================================
-# Store historical CSV
-# ==================================================
-today = date.today().isoformat()
-file_exists = os.path.isfile(DATA_FILE)
+csv_exists = os.path.isfile(DATA_FILE)
 
 with open(DATA_FILE, "a", newline="") as f:
     writer = csv.writer(f)
 
-    if not file_exists:
+    if not csv_exists:
         writer.writerow([
             "date",
-            "EUR_USD",
-            "USD_BOB_PARALLEL",
-            "USD_BOB_REFERENCIAL"
+            "eurusd",
+            "usd_bob_parallel",
+            "usd_bob_referencial"
         ])
 
     writer.writerow([
-        today,
-        round(eurusd, 4),
-        round(parallel, 2),
-        round(referencial, 2)
+        today(),
+        eurusd,
+        parallel,
+        referencial
     ])
 
+# --------------------------------------------------
+# Weekly / Monthly averages
+# --------------------------------------------------
 
-# ==================================================
-# Weekly & Monthly averages
-# ==================================================
 def same_week(d1, d2):
     return d1.isocalendar()[:2] == d2.isocalendar()[:2]
 
 today_dt = date.today()
-this_month = today_dt.strftime("%Y-%m")
+month_prefix = today_dt.strftime("%Y-%m")
 
-weekly = []
-monthly = []
+week = []
+month = []
 
 with open(DATA_FILE, newline="") as f:
     reader = csv.DictReader(f)
@@ -106,42 +107,49 @@ with open(DATA_FILE, newline="") as f:
         d = datetime.fromisoformat(row["date"]).date()
 
         if same_week(d, today_dt):
-            weekly.append(row)
-        if row["date"].startswith(this_month):
-            monthly.append(row)
+            week.append(row)
+        if row["date"].startswith(month_prefix):
+            month.append(row)
 
 weekly_avg = {
-    "eurusd": mean(float(r["EUR_USD"]) for r in weekly),
-    "parallel": mean(float(r["USD_BOB_PARALLEL"]) for r in weekly),
-    "referencial": mean(float(r["USD_BOB_REFERENCIAL"]) for r in weekly),
+    "eurusd": r2(mean(float(r["eurusd"]) for r in week)),
+    "parallel": r2(mean(float(r["usd_bob_parallel"]) for r in week)),
+    "referencial": r2(mean(float(r["usd_bob_referencial"]) for r in week)),
 }
 
 monthly_avg = {
-    "eurusd": mean(float(r["EUR_USD"]) for r in monthly),
-    "parallel": mean(float(r["USD_BOB_PARALLEL"]) for r in monthly),
-    "referencial": mean(float(r["USD_BOB_REFERENCIAL"]) for r in monthly),
+    "eurusd": r2(mean(float(r["eurusd"]) for r in month)),
+    "parallel": r2(mean(float(r["usd_bob_parallel"]) for r in month)),
+    "referencial": r2(mean(float(r["usd_bob_referencial"]) for r in month)),
 }
 
+# --------------------------------------------------
+# OUTPUT JSON (this part was missing before)
+# --------------------------------------------------
 
-# ==================================================
-# Output JSON for iPhone widget
-# ==================================================
 output = {
-    "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    "daily": {
-        "eurusd": round(eurusd, 5),
-        "usd_bob_parallel": parallel,
-        "usd_bob_referencial": referencial
+    "updated": datetime.now().strftime("%Y-%m-%d %H:%M"),
+
+    "today": {
+        "EUR/USD": eurusd,
+        "USD/BOB Parallel": parallel,
+        "USD/BOB Referencial": referencial
     },
+
     "weekly_avg": {
-        "eurusd": round(weekly_avg["eurusd"], 5),
-        "usd_bob_parallel": weekly_avg["parallel"],
-        "usd_bob_referencial": weekly_avg["referencial"]
+        "EUR/USD": weekly_avg["eurusd"],
+        "USD/BOB Parallel": weekly_avg["parallel"],
+        "USD/BOB Referencial": weekly_avg["referencial"]
     },
+
     "monthly_avg": {
-        "eurusd": round(monthly_avg["eurusd"], 4),
-        "usd_bob_parallel": round(monthly_avg["parallel"], 2),
-        "usd_bob_referencial": round(monthly_avg["referencial"], 2)
+        "EUR/USD": monthly_avg["eurusd"],
+        "USD/BOB Parallel": monthly_avg["parallel"],
+        "USD/BOB Referencial": monthly_avg["referencial"]
     }
 }
 
+with open(JSON_FILE, "w") as f:
+    json.dump(output, f, indent=2)
+
+print("fx.json generated successfully")
