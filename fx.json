@@ -1,5 +1,5 @@
 {
-  "updated": "2026-05-12 16:36:38",
+  "updated": "2026-05-12 17:23:47",
   "daily": {
     "eurusd": 1.1774,
     "usdt_bob": 10.04,
@@ -11,8 +11,8 @@
     "referencial": 10.39
   },
   "monthly_avg": {
-    "eurusd": 1.1766,
-    "usdt_bob": 10.02,
-    "referencial": 10.34
+    "eurusd": 1.1767,
+    "usdt_bob": 10.03,
+    "referencial": 10.35
   }
 }
