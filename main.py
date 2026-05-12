@@ -10,6 +10,7 @@ JSON_FILE = "fx.json"
 
 print("Starting FX update script...")
 
+#fix main
 
 # ==================================================
 # EUR / USD
