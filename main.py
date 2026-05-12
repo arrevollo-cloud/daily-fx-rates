@@ -20,6 +20,13 @@ def r2(x):
 def today():
     return date.today().isoformat()
 
+def get(row, *keys):
+    """Return first existing key from CSV row"""
+    for k in keys:
+        if k in row and row[k] != "":
+            return float(row[k])
+    raise KeyError(f"None of keys found: {keys}")
+
 # --------------------------------------------------
 # Data sources
 # --------------------------------------------------
@@ -34,7 +41,7 @@ def get_usdt_bob_parallel():
     payload = {
         "page": 1,
         "rows": 5,
-        "tradeType": "SELL",   # venta
+        "tradeType": "SELL",
         "asset": "USDT",
         "fiat": "BOB",
         "countries": [],
@@ -46,7 +53,6 @@ def get_usdt_bob_parallel():
     return r.json()["data"][0]["adv"]["price"]
 
 def get_bcb_valor_referencial():
-    # Valor referencial USD/BOB (Venta ≈ 10.39)
     url = "https://bcb.cucu.bo/api/v1/tc/usd"
     r = requests.get(url, timeout=15)
     r.raise_for_status()
@@ -89,7 +95,7 @@ with open(DATA_FILE, "a", newline="") as f:
     ])
 
 # --------------------------------------------------
-# Weekly / Monthly averages
+# Weekly / Monthly averages (BACKWARD COMPATIBLE)
 # --------------------------------------------------
 
 def same_week(d1, d2):
@@ -112,19 +118,31 @@ with open(DATA_FILE, newline="") as f:
             month.append(row)
 
 weekly_avg = {
-    "eurusd": r2(mean(float(r["eurusd"]) for r in week)),
-    "parallel": r2(mean(float(r["usd_bob_parallel"]) for r in week)),
-    "referencial": r2(mean(float(r["usd_bob_referencial"]) for r in week)),
+    "eurusd": r2(mean(
+        get(r, "eurusd", "EUR_USD") for r in week
+    )),
+    "parallel": r2(mean(
+        get(r, "usd_bob_parallel", "USD_BOB_PARALLEL") for r in week
+    )),
+    "referencial": r2(mean(
+        get(r, "usd_bob_referencial", "USD_BOB_REFERENCIAL") for r in week
+    )),
 }
 
 monthly_avg = {
-    "eurusd": r2(mean(float(r["eurusd"]) for r in month)),
-    "parallel": r2(mean(float(r["usd_bob_parallel"]) for r in month)),
-    "referencial": r2(mean(float(r["usd_bob_referencial"]) for r in month)),
+    "eurusd": r2(mean(
+        get(r, "eurusd", "EUR_USD") for r in month
+    )),
+    "parallel": r2(mean(
+        get(r, "usd_bob_parallel", "USD_BOB_PARALLEL") for r in month
+    )),
+    "referencial": r2(mean(
+        get(r, "usd_bob_referencial", "USD_BOB_REFERENCIAL") for r in month
+    )),
 }
 
 # --------------------------------------------------
-# OUTPUT JSON (this part was missing before)
+# Output JSON for iPhone widget
 # --------------------------------------------------
 
 output = {
