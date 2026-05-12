@@ -1,5 +1,5 @@
 name: FX Auto Update
-
+#workflow activated
 on:
   schedule:
     - cron: "*/30 * * * *"
