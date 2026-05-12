@@ -128,14 +128,14 @@ monthly_avg = {
 output = {
     "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     "daily": {
-        "eurusd": round(eurusd, 4),
-        "usd_bob_parallel": round(parallel, 2),
-        "usd_bob_referencial": round(referencial, 2)
+        "eurusd": round(eurusd, 5),
+        "usd_bob_parallel": parallel,
+        "usd_bob_referencial": referencial
     },
     "weekly_avg": {
-        "eurusd": round(weekly_avg["eurusd"], 4),
-        "usd_bob_parallel": round(weekly_avg["parallel"], 2),
-        "usd_bob_referencial": round(weekly_avg["referencial"], 2)
+        "eurusd": round(weekly_avg["eurusd"], 5),
+        "usd_bob_parallel": weekly_avg["parallel"],
+        "usd_bob_referencial": weekly_avg["referencial"]
     },
     "monthly_avg": {
         "eurusd": round(monthly_avg["eurusd"], 4),
