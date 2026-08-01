@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-01 06:13",
+  "updated": "2026-08-01 08:38",
   "today": {
     "EUR/USD": 1.15,
     "USD/BOB Parallel": 11.73,
@@ -8,11 +8,11 @@
   "weekly_avg": {
     "EUR/USD": 1.14,
     "USD/BOB Parallel": 11.82,
-    "USD/BOB Referencial": 11.86
+    "USD/BOB Referencial": 11.87
   },
   "monthly_avg": {
     "EUR/USD": 1.15,
-    "USD/BOB Parallel": 11.75,
+    "USD/BOB Parallel": 11.74,
     "USD/BOB Referencial": 12.24
   }
 }
