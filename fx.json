@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-17 21:11",
+  "updated": "2026-10-17 23:17",
   "today": {
     "EUR/USD": 1.12,
     "USD/BOB Parallel": 11.84,
@@ -12,7 +12,7 @@
   },
   "monthly_avg": {
     "EUR/USD": 1.12,
-    "USD/BOB Parallel": 11.89,
+    "USD/BOB Parallel": 11.88,
     "USD/BOB Referencial": 11.83
   }
 }
